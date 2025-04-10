@@ -4,10 +4,11 @@ from PIL import Image, ImageTk
 import sqlite3
 import admin
 
-
+# Izveido savienojumu ar SQLite datubāzi
 conn = sqlite3.connect("kino.db")
 cur = conn.cursor()
 
+# Krāsu definīcijas
 BG_COLOR = "#1E1E1E"
 FG_COLOR = "#CCCCCC"
 BD_COLOR = "#444444"
@@ -16,23 +17,25 @@ BT_TEXT_COLOR = "#000000"
 RB_COLOR = "#CCCCCC"
 MAIN_BG_COLOR = "#2E2E2E"
 
-
+# Funkcija loga definēšanai (galvenais vai virslogu)
 def defineWindow(window_width, window_height, title, bg, ifTopLevel):
-
     if ifTopLevel:
+        # Izveido jaunu logu, kas ir virs esošā
         temp = Toplevel()
         temp.configure(bg=bg)
-        temp.resizable(False, False)
+        temp.resizable(False, False)  # Logs nav pārveidojams
         temp.title(title)
         temp.transient(root)
-        temp.grab_set()
+        temp.grab_set()  # Bloķē citu logu darbību, līdz šis logs tiek aizvērts
         return temp
     else:
+        # Izveido galveno logu
         temp = Tk()
         temp.resizable(False, False)
         temp.configure(bg=bg)
         temp.title(title)
         if window_width != 0 and window_height != 0:
+            # Nosaka loga izmērus un centrē to ekrānā
             screen_width = temp.winfo_screenwidth()
             screen_height = temp.winfo_screenheight()
             x = (screen_width // 2) - (window_width // 2)
@@ -40,12 +43,12 @@ def defineWindow(window_width, window_height, title, bg, ifTopLevel):
             temp.geometry(f"{window_width}x{window_height}+{x}+{y}")
         return temp
 
-
+# Funkcija, kas iztīra loga saturu
 def clearWin(root):
     for widget in root.winfo_children():
         widget.pack_forget()
 
-
+# Kontaktinformācijas loga funkcija
 def winContact():
     clearWin(root)
 
@@ -60,10 +63,11 @@ def winContact():
     )
     contact_label.pack()
 
+    # Atpakaļ poga
     back_button = Button(root, text="Atpakaļ", command=winMain)
     back_button.pack()
 
-
+# Galvenais logs, kur tiek attēlots filmu saraksts
 def winMain():
     global Lb
 
@@ -73,6 +77,7 @@ def winMain():
     framTitle = Frame(root)
     framTitle.pack()
 
+    # Loga virsraksts
     text2 = Label(
         framTitle,
         text="Kur noskatīties?",
@@ -85,18 +90,19 @@ def winMain():
     )
     text2.pack()
 
+    # Galvenais filtrēšanas un filmu saraksta rādis
     fram1.pack(side=LEFT, padx=5)
 
     addGenres(fram1, Lb)
     cur.execute("""SELECT Filmu_Nosaukums FROM Filmas""")
     res = cur.fetchall()
     for i in res:
-        Lb.insert(END, i[0])
+        Lb.insert(END, i[0])  # Ielādē visas filmas sarakstā
     Lb.pack(side="left")
 
-    Lb.bind("<Double-Button-1>", selected_item)
+    Lb.bind("<Double-Button-1>", selected_item)  # Dubultklikšķis uz filmas, lai izvēlētos
 
-
+# Administrācijas loga funkcija
 def winAdmin():
     global username, password, status_label
 
@@ -106,29 +112,29 @@ def winAdmin():
     fram1.pack(expand=True)
     Label(fram1, text="Administratoru panelis", font=("Arial", 16)).pack(pady=10)
     Label(fram1, text="Lietotājvārds:").pack()
-    username = Entry(fram1, font=("Arial", 14))
+    username = Entry(fram1, font=("Arial", 14))  # Lietotājvārda ievades lauks
     username.pack()
     Label(fram1, text="Parole:").pack()
-    password = Entry(fram1, font=("Arial", 14), show="*")
+    password = Entry(fram1, font=("Arial", 14), show="*")  # Paroles ievades lauks
     password.pack()
     Button(
         fram1,
         text="Login",
         font=("Arial", 14),
-        command=lambda: admin.checkAdmin(username, password, status_label, root),
+        command=lambda: admin.checkAdmin(username, password, status_label, root),  # Admina pieteikšanās funkcija
     ).pack(pady=10)
     status_label = Label(fram1, text="", font=("Arial", 12), bg=MAIN_BG_COLOR)
     status_label.pack()
 
-
+# Galvenais izvēlnes pievienošanas funkcija
 def addMenu(root):
     menu = Menu(root, bg=FG_COLOR)
     root.config(menu=menu)
-    menu.add_cascade(label="Main", command=winMain)
-    menu.add_cascade(label="Kontakt Informācija", command=winContact)
-    menu.add_cascade(label="Administratori", command=winAdmin)
+    menu.add_cascade(label="Main", command=winMain)  # Galvenais logs
+    menu.add_cascade(label="Kontakt Informācija", command=winContact)  # Kontaktinformācija
+    menu.add_cascade(label="Administratori", command=winAdmin)  # Administratori
 
-
+# Funkcija žanru filtrēšanai
 def addGenres(frame, Lb):
     global v
     framGenres = Frame(fram1, bg=BD_COLOR, bd=5, relief="solid")
@@ -137,11 +143,12 @@ def addGenres(frame, Lb):
         framGenres, text="Filtrēt", command=filterGenre, font=("Arial", 9)
     )
 
-    v = IntVar()
+    v = IntVar()  # Atzīmēto žanru saglabāšana
 
     cur.execute("SELECT zanru_ID, Zanru_Nosaukums FROM Zanri")
     res = cur.fetchall()
 
+    # Pievieno radiopogas žanriem
     columns = 3
     for i, (zanru_ID, zanru_name) in enumerate(res):
         radbutt = Radiobutton(
@@ -149,7 +156,6 @@ def addGenres(frame, Lb):
             text=zanru_name,
             variable=v,
             value=zanru_ID,
-            # bg="#1E1E1E",
             fg=BT_TEXT_COLOR,
             bd=2,
             relief="solid",
@@ -163,9 +169,9 @@ def addGenres(frame, Lb):
     films = cur.fetchall()
 
     for film in films:
-        Lb.insert(END, film[0])
+        Lb.insert(END, film[0])  # Ielādē visas filmas sarakstā
 
-
+# Funkcija, lai parādītu, kur var skatīties izvēlēto filmu
 def showWhereToWatch():
     for i in Lb.curselection():
         temp = Lb.get(i)
@@ -201,13 +207,13 @@ def showWhereToWatch():
     Button(winShow, text="Aizvērt", command=winShow.destroy).pack()
     winShow.mainloop()
 
-
+# Funkcija žanra filtrēšanai
 def filterGenre():
     global v, Lb
 
     genre_id = v.get()
 
-    Lb.delete(0, END)
+    Lb.delete(0, END)  # Iztīra esošo sarakstu
 
     cur.execute(
         """
@@ -218,9 +224,9 @@ def filterGenre():
     res = cur.fetchall()
 
     for film in res:
-        Lb.insert(END, film[0])
+        Lb.insert(END, film[0])  # Ielādē tikai izvēlētā žanra filmas
 
-
+# Funkcija, kas tiek izsaukta, kad tiek izvēlēta filma
 def selected_item(event):
     clearWin(fram2)
     w = Label(fram2)
@@ -243,7 +249,7 @@ def selected_item(event):
     cur.execute(f"SELECT filmu_ID FROM Filmas WHERE Filmu_nosaukums = '{temp}'")
     tempid = cur.fetchall()
 
-    id1 = f"data/{tempid[0][0]}.png"
+    id1 = f"data/{tempid[0][0]}.png"  # Attēla faila nosaukums
     image = Image.open(id1)
     image.thumbnail((300, 300))
     resized_image = image.copy()
@@ -261,18 +267,18 @@ def selected_item(event):
     btnShow.pack(pady=10)
     fram2.pack()
 
-
+# Galvenais loga izveidesa
 root = defineWindow(800, 700, "Kur noskatīties?", MAIN_BG_COLOR, 0)
-v = IntVar()
+v = IntVar()  # Atzīmētā žanra saglabāšana
 framTitle = Frame(root, height=100, width=200)
 fram1 = Frame(root, height=100, width=100, bg=MAIN_BG_COLOR)
 fram2 = Frame(root, bd=5, relief="sunken", bg=BG_COLOR)
 Lb = Listbox(
     fram1, font=("Arial", 14), bg=BD_COLOR, fg=FG_COLOR, bd=5, relief="solid", width=35
 )
-addMenu(root)
+addMenu(root)  # Pievieno izvēlni
 text2 = Label(
     framTitle, text="Kur noskatīties?", font=("Zettameter Regular", 50), fg="red"
 )
-winMain()
+winMain()  # Galvenais logs tiek atvērts
 root.mainloop()
